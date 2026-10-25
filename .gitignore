@@ -1,0 +1,30 @@
+# Dependency directories
+node_modules/
+dist/
+
+# Build artifacts and packages
+*.vsix
+*.log
+
+# Compiler outputs
+*.exe
+*.o
+*.obj
+*.class
+*.jar
+*.out
+
+# Editor and IDE
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS metadata
+Thumbs.db
+.DS_Store
