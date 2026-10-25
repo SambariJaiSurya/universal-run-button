@@ -4,6 +4,10 @@
   "description": "Compile and run source files across 50+ languages in the VS Code integrated terminal.",
   "version": "0.1.0",
   "publisher": "local-developer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SambariJaiSurya/universal-run-button.git"
+  },
   "engines": {
     "vscode": "^1.80.0"
   },

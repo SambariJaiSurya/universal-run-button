@@ -4,8 +4,8 @@
 
 [![Visual Studio Code](https://img.shields.io/badge/VS%20Code-v1.80.0+-007ACC?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com/)
 [![TypeScript](https://img.shields.io/badge/Built%20With-TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/SambariJaiSurya/universal-run-button)
+[![GitHub stars](https://img.shields.io/github/stars/SambariJaiSurya/universal-run-button?style=social)](https://github.com/SambariJaiSurya/universal-run-button)
 
 **Compile, interpret, or preview over 50+ programming languages with a single click.**
 
@@ -118,7 +118,7 @@ The extension organizes language execution into three clear tiers:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/universal-run-button.git
+git clone https://github.com/SambariJaiSurya/universal-run-button.git
 cd universal-run-button
 
 # Install development dependencies
