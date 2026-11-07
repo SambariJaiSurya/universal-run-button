@@ -108,7 +108,8 @@ export function activate(context: vscode.ExtensionContext) {
             const isWindows = process.platform === 'win32';
             const mazExe = `"E:\\coding stuff\\my languages\\maz\\maz.exe"`;
             const quotedPath = isWindows ? `"${filePath}"` : `'${filePath.replace(/'/g, "'\\''")}'`;
-            const cmd = `${mazExe} ${quotedPath}`;
+            // PowerShell requires & (call operator) before a quoted executable path
+            const cmd = isWindows ? `& ${mazExe} ${quotedPath}` : `${mazExe} ${quotedPath}`;
             const terminal = vscode.window.terminals.find(t => t.name === 'MAZ Runner')
                 ?? vscode.window.createTerminal('MAZ Runner');
             terminal.show();
