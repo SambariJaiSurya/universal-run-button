@@ -96,6 +96,26 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
     context.subscriptions.push(liveServerMenuDisposable);
+
+    // 7. MAZ language runner
+    const runMazDisposable = vscode.commands.registerCommand(
+        'universal-runner.runMaz',
+        async (uri?: vscode.Uri) => {
+            const filePath = await resolveTargetFilePath(uri);
+            if (!filePath) {
+                return;
+            }
+            const isWindows = process.platform === 'win32';
+            const mazExe = `"E:\\coding stuff\\my languages\\maz\\maz.exe"`;
+            const quotedPath = isWindows ? `"${filePath}"` : `'${filePath.replace(/'/g, "'\\''")}'`;
+            const cmd = `${mazExe} ${quotedPath}`;
+            const terminal = vscode.window.terminals.find(t => t.name === 'MAZ Runner')
+                ?? vscode.window.createTerminal('MAZ Runner');
+            terminal.show();
+            terminal.sendText(cmd, true);
+        }
+    );
+    context.subscriptions.push(runMazDisposable);
 }
 
 export function deactivate() {

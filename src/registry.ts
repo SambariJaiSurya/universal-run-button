@@ -543,6 +543,20 @@ export const LANGUAGE_REGISTRY: LanguageDefinition[] = [
         installGuidance: 'Please install Godot Engine and add godot executable to PATH.',
         executionType: 'special',
         specialHandlingNotice: 'GDScript requires the Godot engine executable to run.'
+    },
+
+    // -------------------------------------------------------------
+    // CUSTOM LANGUAGES
+    // -------------------------------------------------------------
+    {
+        id: 'maz',
+        name: 'MAZ',
+        tier: 1,
+        extensions: ['.maz'],
+        requiredTools: ['maz.exe'],
+        defaultToolExecutable: 'maz',
+        installGuidance: 'Please ensure maz.exe is accessible (located at E:\\coding stuff\\my languages\\maz\\maz.exe).',
+        executionType: 'script'
     }
 ];
 
