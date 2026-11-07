@@ -3,12 +3,17 @@ import * as path from 'path';
 import { exec } from 'child_process';
 import { findLanguageForFile, LanguageDefinition } from './registry';
 import { buildExecutionPlan } from './executor';
+import { LiveServerManager, configureHtmlAction } from './liveServer';
 
 const TERMINAL_NAME = 'Universal Run';
 let runnerTerminal: vscode.Terminal | undefined;
 let isRunPending = false;
+let liveServerManager: LiveServerManager | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
+    liveServerManager = new LiveServerManager();
+    context.subscriptions.push(liveServerManager);
+
     context.subscriptions.push(
         vscode.window.onDidCloseTerminal((closedTerminal) => {
             if (closedTerminal === runnerTerminal) {
@@ -17,57 +22,197 @@ export function activate(context: vscode.ExtensionContext) {
         })
     );
 
-    const runDisposable = vscode.commands.registerCommand('universal-runner.run', async () => {
+    // 1. Primary "Run File" command
+    const runDisposable = vscode.commands.registerCommand('universal-runner.run', async (uri?: vscode.Uri) => {
         if (isRunPending) {
             return;
         }
         isRunPending = true;
         try {
-            await handleRun();
+            await handleRun(uri);
         } finally {
             setTimeout(() => {
                 isRunPending = false;
             }, 500);
         }
     });
-
     context.subscriptions.push(runDisposable);
+
+    // 2. HTML: Run with Live Server
+    const runHtmlLiveServerDisposable = vscode.commands.registerCommand(
+        'universal-runner.runHtmlLiveServer',
+        async (uri?: vscode.Uri) => {
+            const filePath = await resolveTargetFilePath(uri);
+            if (!filePath) {
+                return;
+            }
+            if (liveServerManager) {
+                await liveServerManager.start(filePath);
+            }
+        }
+    );
+    context.subscriptions.push(runHtmlLiveServerDisposable);
+
+    // 3. HTML: Run Path (Direct file path in default browser)
+    const runHtmlPathDisposable = vscode.commands.registerCommand(
+        'universal-runner.runHtmlPath',
+        async (uri?: vscode.Uri) => {
+            const filePath = await resolveTargetFilePath(uri);
+            if (!filePath) {
+                return;
+            }
+            await handleRunPath(filePath);
+        }
+    );
+    context.subscriptions.push(runHtmlPathDisposable);
+
+    // 4. HTML: Configure Default Action (Customize Play button behavior)
+    const configureHtmlActionDisposable = vscode.commands.registerCommand(
+        'universal-runner.configureHtmlAction',
+        async () => {
+            await configureHtmlAction();
+        }
+    );
+    context.subscriptions.push(configureHtmlActionDisposable);
+
+    // 5. HTML: Stop Live Server
+    const stopLiveServerDisposable = vscode.commands.registerCommand(
+        'universal-runner.stopLiveServer',
+        async () => {
+            if (liveServerManager) {
+                await liveServerManager.stop();
+            }
+        }
+    );
+    context.subscriptions.push(stopLiveServerDisposable);
+
+    // 6. Live Server options menu (from status bar or command palette)
+    const liveServerMenuDisposable = vscode.commands.registerCommand(
+        'universal-runner.showLiveServerMenu',
+        async () => {
+            if (liveServerManager) {
+                await liveServerManager.showMenu();
+            }
+        }
+    );
+    context.subscriptions.push(liveServerMenuDisposable);
 }
 
 export function deactivate() {
     runnerTerminal = undefined;
+    if (liveServerManager) {
+        liveServerManager.dispose();
+        liveServerManager = undefined;
+    }
 }
 
-async function handleRun() {
+/**
+ * Resolves the target file path from an explicit Uri (e.g. title bar click)
+ * or the active text editor. Automatically saves dirty documents before running.
+ */
+async function resolveTargetFilePath(uri?: vscode.Uri): Promise<string | undefined> {
+    if (uri && uri.fsPath) {
+        const doc = vscode.workspace.textDocuments.find(d => d.uri.fsPath === uri.fsPath);
+        if (doc && doc.isDirty) {
+            const saved = await doc.save();
+            if (!saved) {
+                vscode.window.showErrorMessage('Failed to save file before running.');
+                return undefined;
+            }
+        }
+        return uri.fsPath;
+    }
+
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
         vscode.window.showWarningMessage('No active editor found.');
-        return;
+        return undefined;
     }
 
     const document = editor.document;
 
-    // Check if the document has been saved to disk
     if (document.isUntitled) {
         vscode.window.showErrorMessage('Please save the file before running.');
-        return;
+        return undefined;
     }
 
-    // Save document if modified
     if (document.isDirty) {
         const saved = await document.save();
         if (!saved) {
             vscode.window.showErrorMessage('Failed to save file before running.');
-            return;
+            return undefined;
         }
     }
 
-    const filePath = document.uri.fsPath;
+    return document.uri.fsPath;
+}
+
+/**
+ * Handles HTML execution based on user configuration (Live Server, Run Path, or Prompt)
+ */
+async function handleHtmlRun(filePath: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration('universalRunner');
+    const defaultAction = config.get<string>('htmlDefaultAction') || 'liveServer';
+
+    if (defaultAction === 'runPath') {
+        await handleRunPath(filePath);
+    } else if (defaultAction === 'liveServer') {
+        if (liveServerManager) {
+            await liveServerManager.start(filePath);
+        }
+    } else {
+        // Prompt user
+        const items = [
+            {
+                label: '$(radio-tower) Live Server',
+                description: 'Launch local development server with auto-reload on file save',
+                value: 'liveServer'
+            },
+            {
+                label: '$(browser) Run Path (File Path)',
+                description: 'Open file directly in default web browser via file:/// URL',
+                value: 'runPath'
+            }
+        ];
+        const selected = await vscode.window.showQuickPick(items, {
+            placeHolder: 'Select how you want to run this HTML file'
+        });
+        if (!selected) {
+            return;
+        }
+        if (selected.value === 'liveServer' && liveServerManager) {
+            await liveServerManager.start(filePath);
+        } else {
+            await handleRunPath(filePath);
+        }
+    }
+}
+
+/**
+ * Opens the file path directly in the default system web browser (Run Path)
+ */
+async function handleRunPath(filePath: string): Promise<void> {
+    await vscode.env.openExternal(vscode.Uri.file(filePath));
+    vscode.window.showInformationMessage(`Opened ${path.basename(filePath)} in default browser (file path).`);
+}
+
+async function handleRun(uri?: vscode.Uri) {
+    const filePath = await resolveTargetFilePath(uri);
+    if (!filePath) {
+        return;
+    }
+
     const lang = findLanguageForFile(filePath);
 
     if (!lang) {
         const ext = path.extname(filePath) || path.basename(filePath);
         vscode.window.showErrorMessage(`Universal Run Button: File type '${ext}' is not supported.`);
+        return;
+    }
+
+    // Special handling: HTML files with customizable Live Server or Run Path
+    if (lang.id === 'html') {
+        await handleHtmlRun(filePath);
         return;
     }
 
@@ -88,17 +233,18 @@ async function handleRun() {
     }
 
     const isWindows = process.platform === 'win32';
-    const plan = buildExecutionPlan(lang, filePath, document.getText(), isWindows, customToolPaths);
+    const document = vscode.workspace.textDocuments.find(d => d.uri.fsPath === filePath) || vscode.window.activeTextEditor?.document;
+    const fileContent = document ? document.getText() : '';
+    const plan = buildExecutionPlan(lang, filePath, fileContent, isWindows, customToolPaths);
 
     // 2. Handle Custom VS Code actions
     if (plan.customExecution === 'open-browser' && plan.browserTarget) {
-        vscode.env.openExternal(vscode.Uri.file(plan.browserTarget));
-        vscode.window.showInformationMessage(`Opened ${path.basename(plan.browserTarget)} in your default browser.`);
+        await handleRunPath(plan.browserTarget);
         return;
     }
 
     if (plan.customExecution === 'markdown-preview') {
-        await vscode.commands.executeCommand('markdown.showPreview', document.uri);
+        await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(filePath));
         return;
     }
 
@@ -129,7 +275,6 @@ function getOrCreateTerminal(): vscode.Terminal {
 
 function checkToolAvailable(toolName: string): Promise<{ available: boolean }> {
     return new Promise((resolve) => {
-        // Probe command: check with tool --version, -version, or /? (for cmd)
         let probeCmd = `${toolName} --version`;
         if (toolName === 'java' || toolName === 'javac') {
             probeCmd = `${toolName} -version`;
@@ -145,7 +290,6 @@ function checkToolAvailable(toolName: string): Promise<{ available: boolean }> {
 
         exec(probeCmd, (error) => {
             if (error) {
-                // If standard --version fails, try where.exe / which
                 const lookupCmd = process.platform === 'win32' ? `where.exe ${toolName}` : `which ${toolName}`;
                 exec(lookupCmd, (lookupError) => {
                     resolve({ available: !lookupError });

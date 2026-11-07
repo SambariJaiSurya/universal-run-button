@@ -90,7 +90,10 @@ The extension organizes language execution into three clear tiers:
 
 ### 🥉 Tier 3: Specialized & Workflow Handlings
 
-- **HTML** (`.html`, `.htm`): Automatically launches the page in your default browser.
+- **HTML** (`.html`, `.htm`): Provides a **split Play button with dropdown** (`▶ ▾`):
+  - **Live Server**: Launches a local development HTTP server with automatic live reload on file save (or delegates to Ritwick Dey's Live Server extension if installed).
+  - **Run Path (File Path)**: Directly opens the file in your default system browser via `file:///` URI.
+  - **Customizable**: Choose whether clicking the Play button defaults to **Live Server** or **Run Path** (or prompts each time).
 - **Markdown** (`.md`, `.markdown`): Opens the native VS Code Markdown preview side-by-side.
 - **SQL** (`.sql`): Helpful prompt reminding to run queries through an active database connection.
 - **Frontend Components** (`.jsx`, `.tsx`, `.vue`, `.svelte`, `.astro`): Guided alert suggesting to run project dev servers (`npm run dev`).
@@ -138,7 +141,33 @@ code --install-extension universal-run-button-0.1.0.vsix --force
 
 ## ⚙️ Configuration
 
-You can override default binary names with absolute paths in your VS Code `settings.json`:
+### HTML & Live Server Settings
+
+You can customize the HTML Play button behavior and Live Server in your VS Code `settings.json`:
+
+```json
+{
+  // Default action when clicking the Play button on HTML files:
+  // "liveServer" (default) | "runPath" | "prompt"
+  "universalRunner.htmlDefaultAction": "liveServer",
+
+  // Live Server provider:
+  // "auto" (default) | "builtIn" | "extension" | "customCommand"
+  "universalRunner.liveServer.provider": "auto",
+
+  // Port for the built-in Live Server (defaults to 5500; auto-increments if occupied)
+  "universalRunner.liveServer.port": 5500,
+
+  // Optional custom shell command for live server (e.g. "npx live-server" or "python -m http.server")
+  "universalRunner.liveServer.customCommand": ""
+}
+```
+
+> **Tip**: You can also quickly switch default behavior anytime directly from the HTML play button dropdown by choosing **Customize Default HTML Action...**.
+
+### Custom Tool Paths
+
+You can override default compiler and runtime paths:
 
 ```json
 {
