@@ -23,6 +23,7 @@ export interface BuildPlan {
     customExecution?: 'markdown-preview' | 'open-browser';
     browserTarget?: string;
     warningNotice?: string;
+    commandOverride?: string;
 }
 
 export function buildExecutionPlan(
@@ -30,7 +31,8 @@ export function buildExecutionPlan(
     filePath: string,
     fileContent: string,
     isWindows: boolean,
-    customPaths: Record<string, string> = {}
+    customPaths: Record<string, string> = {},
+    commandOverride?: string
 ): BuildPlan {
     const fileDir = path.dirname(filePath);
     const fileName = path.basename(filePath);
@@ -38,6 +40,14 @@ export function buildExecutionPlan(
     const baseName = path.basename(filePath, ext);
 
     const q = isWindows ? psQuote : posixQuote;
+
+    // If an external command override is provided (e.g. from Reader System), honor it immediately
+    if (commandOverride && commandOverride.trim()) {
+        return {
+            workingDir: fileDir,
+            command: commandOverride
+        };
+    }
 
     // Check special handlings first
     if (lang.executionType === 'web' && (ext.toLowerCase() === '.html' || ext.toLowerCase() === '.htm')) {

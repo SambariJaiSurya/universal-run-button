@@ -1,0 +1,6 @@
+{
+  "runtime": "node",
+  "automaticLibraryDetection": true,
+  "checkNodeModules": true
+}
+

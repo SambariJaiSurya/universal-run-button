@@ -1,0 +1,10 @@
+{
+  "name": "example-library",
+  "packages": [
+    "org.example"
+  ],
+  "jarFiles": [
+    "E:/Libraries/example/example.jar"
+  ]
+}
+

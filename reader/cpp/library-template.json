@@ -1,0 +1,25 @@
+{
+  "name": "example-library",
+  "headers": [
+    "example.h"
+  ],
+  "includePaths": [
+    "E:/Libraries/example/include"
+  ],
+  "libraryPaths": [
+    "E:/Libraries/example/lib"
+  ],
+  "libraryFiles": [
+    "E:/Libraries/example/lib/libexample.a"
+  ],
+  "runtimePaths": [
+    "E:/Libraries/example/bin"
+  ],
+  "runtimeFiles": [],
+  "compilerFlags": [],
+  "linkerFlags": [],
+  "dependencies": [],
+  "compiler": "g++",
+  "standard": "c++17"
+}
+

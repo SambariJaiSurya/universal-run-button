@@ -1,0 +1,13 @@
+{
+  "defaultCompiler": "g++",
+  "defaultStandard": "c++17",
+  "defaultCCompiler": "gcc",
+  "defaultCStandard": "c11",
+  "outputDirectory": "",
+  "automaticLibraryDetection": true,
+  "automaticDependencyResolution": true,
+  "validateLibraryPaths": true,
+  "buildCaching": true,
+  "showBuildCommands": false
+}
+

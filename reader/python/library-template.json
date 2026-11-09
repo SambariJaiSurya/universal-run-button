@@ -1,0 +1,9 @@
+{
+  "name": "example-package",
+  "importNames": [
+    "example"
+  ],
+  "pipName": "example-package",
+  "minPythonVersion": "3.8"
+}
+

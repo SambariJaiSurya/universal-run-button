@@ -9,3 +9,4 @@ tsconfig.json
 .git/**
 node_modules/**
 *.vsix
+test-samples/build/**

@@ -1,0 +1,6 @@
+{
+  "compiler": "javac",
+  "runner": "java",
+  "automaticLibraryDetection": true
+}
+

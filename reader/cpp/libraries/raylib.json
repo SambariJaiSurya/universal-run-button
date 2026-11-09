@@ -1,0 +1,29 @@
+{
+  "name": "raylib",
+  "headers": [
+    "raylib.h",
+    "raymath.h",
+    "rlgl.h"
+  ],
+  "includePaths": [
+    "E:/raylib/raylib/src"
+  ],
+  "libraryPaths": [
+    "E:/raylib/raylib/src"
+  ],
+  "libraryFiles": [
+    "E:/raylib/raylib/src/libraylib.a"
+  ],
+  "runtimePaths": [],
+  "runtimeFiles": [],
+  "compilerFlags": [],
+  "linkerFlags": [
+    "-lopengl32",
+    "-lgdi32",
+    "-lwinmm"
+  ],
+  "dependencies": [],
+  "compiler": "g++",
+  "standard": "c++17"
+}
+

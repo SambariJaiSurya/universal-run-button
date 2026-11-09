@@ -4,15 +4,19 @@ import { exec } from 'child_process';
 import { findLanguageForFile, LanguageDefinition } from './registry';
 import { buildExecutionPlan } from './executor';
 import { LiveServerManager, configureHtmlAction } from './liveServer';
+import { ReaderManager } from './reader/readerManager';
 
 const TERMINAL_NAME = 'Universal Run';
 let runnerTerminal: vscode.Terminal | undefined;
 let isRunPending = false;
 let liveServerManager: LiveServerManager | undefined;
+let readerManager: ReaderManager | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
     liveServerManager = new LiveServerManager();
     context.subscriptions.push(liveServerManager);
+
+    readerManager = new ReaderManager(context);
 
     context.subscriptions.push(
         vscode.window.onDidCloseTerminal((closedTerminal) => {
@@ -256,7 +260,58 @@ async function handleRun(uri?: vscode.Uri) {
     const isWindows = process.platform === 'win32';
     const document = vscode.workspace.textDocuments.find(d => d.uri.fsPath === filePath) || vscode.window.activeTextEditor?.document;
     const fileContent = document ? document.getText() : '';
-    const plan = buildExecutionPlan(lang, filePath, fileContent, isWindows, customToolPaths);
+
+    // Delegate to Reader System for external library detection
+    let commandOverride: string | undefined;
+    if (readerManager) {
+        const readerResult = await readerManager.inspect(
+            lang.id,
+            filePath,
+            fileContent,
+            isWindows,
+            customToolPaths
+        );
+
+        if (readerResult) {
+            // Handle missing or invalid libraries: report both to VS Code popup and terminal
+            if (readerResult.missingLibraries && readerResult.missingLibraries.length > 0) {
+                const terminal = getOrCreateTerminal();
+                terminal.show();
+
+                for (const missing of readerResult.missingLibraries) {
+                    const termMsg = `\n[Universal Run Error] ${missing.message}\n` +
+                        (missing.expectedPath ? `Expected Path: ${missing.expectedPath}\n` : '') +
+                        (missing.configFile ? `Config File: ${missing.configFile}\n` : '') +
+                        `See documentation in reader/${readerResult.language}/LIBRARY_SETUP.md\n`;
+                    terminal.sendText(`Write-Host "${termMsg.replace(/"/g, '`"')}" -ForegroundColor Red`);
+
+                    const docItem = 'Open Setup Guide';
+                    vscode.window.showErrorMessage(
+                        `Universal Run: ${missing.message}`,
+                        docItem
+                    ).then(selected => {
+                        if (selected === docItem && readerManager) {
+                            const setupDoc = vscode.Uri.file(
+                                path.join(readerManager.getExtensionRoot(), 'reader', readerResult.language, 'LIBRARY_SETUP.md')
+                            );
+                            vscode.commands.executeCommand('markdown.showPreview', setupDoc);
+                        }
+                    });
+                }
+                return;
+            }
+
+            if (readerResult.warningNotice) {
+                vscode.window.showInformationMessage(readerResult.warningNotice);
+            }
+
+            if (readerResult.commandOverride) {
+                commandOverride = readerResult.commandOverride;
+            }
+        }
+    }
+
+    const plan = buildExecutionPlan(lang, filePath, fileContent, isWindows, customToolPaths, commandOverride);
 
     // 2. Handle Custom VS Code actions
     if (plan.customExecution === 'open-browser' && plan.browserTarget) {
